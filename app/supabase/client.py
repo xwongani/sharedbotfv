@@ -8,6 +8,7 @@ load_dotenv()
 
 # Configure logging
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class SupabaseClient:
     """Singleton class to manage Supabase connections"""
