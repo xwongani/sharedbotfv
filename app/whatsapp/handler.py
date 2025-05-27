@@ -42,7 +42,12 @@ class WhatsAppHandler:
             
             # Identify the business this customer is messaging
             business_id = await self._identify_business(from_number, to_number)
-                
+            logger.info(f"[process_message] Identified business_id: {business_id} (type: {type(business_id)}) for user {from_number}")
+            
+            # Check what is stored in session
+            active_business_id = self.user_context_service.get_active_business_id(from_number)
+            logger.info(f"[process_message] Active business in session for {from_number}: {active_business_id} (type: {type(active_business_id)})")
+            
             # Generate and send response
             response = await self._generate_response(from_number, body, business_id)
             
@@ -102,7 +107,7 @@ class WhatsAppHandler:
             except Exception as send_error:
                 logger.error(f"Error sending error message: {str(send_error)}")
     
-    async def _identify_business(self, customer_phone: str, to_phone: str) -> Optional[int]:
+    async def _identify_business(self, customer_phone: str, to_phone: str) -> Optional[str]:
         """
         Identify which business the customer is interacting with
         
@@ -110,6 +115,8 @@ class WhatsAppHandler:
         1. Check if the customer's session has an active business
         2. Check if the customer is already associated with a business
         3. Check if the phone number the customer messaged belongs to a business
+        
+        Returns business ID as a string for consistency.
         
         Args:
             customer_phone: Customer's phone number
@@ -120,31 +127,32 @@ class WhatsAppHandler:
         """
         # First check if the customer already has an active business in their session
         active_business_id = self.user_context_service.get_active_business_id(customer_phone)
+        logger.info(f"[_identify_business] Session active_business_id for {customer_phone}: {active_business_id} (type: {type(active_business_id)})")
         if active_business_id:
-            return active_business_id
+            return str(active_business_id)
         
         # Check if this customer is already associated with a business
         customer, business = await self.supabase_client.identify_customer(customer_phone)
         if customer and business:
             business_id = business.get("id")
+            logger.info(f"[_identify_business] Found business by customer association: {business_id} (type: {type(business_id)})")
             if business_id:
-                # Set this as the active business for the customer
-                await self.user_context_service.set_active_business(customer_phone, business_id)
-                return business_id
+                await self.user_context_service.set_active_business(customer_phone, str(business_id))
+                return str(business_id)
         
         # Check if the phone number the customer messaged is associated with a business
         business = await self.supabase_client.get_business_by_phone(to_phone)
         if business:
             business_id = business.get("id")
+            logger.info(f"[_identify_business] Found business by to_phone: {business_id} (type: {type(business_id)})")
             if business_id:
-                # Set this as the active business for the customer
-                await self.user_context_service.set_active_business(customer_phone, business_id)
-                return business_id
+                await self.user_context_service.set_active_business(customer_phone, str(business_id))
+                return str(business_id)
         
-        # Could not identify a business
+        logger.warning(f"[_identify_business] Could not identify business for user {customer_phone}")
         return None
     
-    async def _generate_response(self, from_number: str, message_text: str, business_id: Optional[int] = None) -> Dict:
+    async def _generate_response(self, from_number: str, message_text: str, business_id: Optional[str] = None) -> Dict:
         """
         Generate a response to a user message
         
@@ -252,7 +260,7 @@ class WhatsAppHandler:
                 
                 if business:
                     # Set the active business
-                    await self.user_context_service.set_active_business(phone_number, business_id)
+                    await self.user_context_service.set_active_business(phone_number, str(business_id))
                     return {
                         "message": f"You're now chatting with {business.get('business_name')}. How can I help you today?"
                     }
@@ -273,7 +281,7 @@ class WhatsAppHandler:
             for business in businesses:
                 if message_lower in business.get("business_name", "").lower():
                     # Set the active business
-                    await self.user_context_service.set_active_business(phone_number, business.get("id"))
+                    await self.user_context_service.set_active_business(phone_number, str(business.get("id")))
                     return {
                         "message": f"You're now chatting with {business.get('business_name')}. How can I help you today?"
                     }
@@ -301,7 +309,7 @@ class WhatsAppHandler:
             
             return {"message": message}
     
-    async def _process_commands(self, phone_number: str, message_text: str, current_state: str, business_id: Optional[int] = None) -> Optional[Dict]:
+    async def _process_commands(self, phone_number: str, message_text: str, current_state: str, business_id: Optional[str] = None) -> Optional[Dict]:
         """
         Process any commands or special message patterns
         
@@ -500,7 +508,7 @@ class WhatsAppHandler:
         # No command matched
         return None
     
-    async def _prepare_conversation_context(self, phone_number: str, current_state: str, business_id: Optional[int] = None) -> Dict:
+    async def _prepare_conversation_context(self, phone_number: str, current_state: str, business_id: Optional[str] = None) -> Dict:
         """
         Prepare context information for the AI response
         
@@ -556,7 +564,7 @@ class WhatsAppHandler:
         
         return context
     
-    async def _update_conversation_state(self, phone_number: str, message_text: str, ai_response: str, business_id: Optional[int] = None):
+    async def _update_conversation_state(self, phone_number: str, message_text: str, ai_response: str, business_id: Optional[str] = None):
         """
         Update the conversation state based on the message content and AI response
         
@@ -584,7 +592,7 @@ class WhatsAppHandler:
         elif checkout_intent:
             await self.user_context_service.update_session_state(phone_number, ConversationState.CHECKOUT, business_id)
     
-    async def _enhance_response_with_products(self, phone_number: str, ai_response: str, message_text: str, business_id: Optional[int] = None) -> Dict:
+    async def _enhance_response_with_products(self, phone_number: str, ai_response: str, message_text: str, business_id: Optional[str] = None) -> Dict:
         """
         Enhance AI response with product information if needed
         
