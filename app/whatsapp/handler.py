@@ -146,7 +146,10 @@ class WhatsAppHandler:
             business_id = business.get("id")
             logger.info(f"[_identify_business] Found business by to_phone: {business_id} (type: {type(business_id)})")
             if business_id:
+                # Set the active business in the session
                 await self.user_context_service.set_active_business(customer_phone, str(business_id))
+                # Update the session state to GREETING since this is a new conversation
+                await self.user_context_service.update_session_state(customer_phone, ConversationState.GREETING, str(business_id))
                 return str(business_id)
         
         logger.warning(f"[_identify_business] Could not identify business for user {customer_phone}")
