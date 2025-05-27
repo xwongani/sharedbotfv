@@ -1,4 +1,5 @@
 import logging
+logging.basicConfig(level=logging.DEBUG)
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.webhook import router as webhook_router
