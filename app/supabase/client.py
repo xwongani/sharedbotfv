@@ -67,18 +67,16 @@ class SupabaseClient:
             # Normalize phone number to ensure consistent searching
             normalized_phone = phone_number.replace("whatsapp:", "")
             
-            # First, fetch from mobile_money_details where businesses might have registered their phone
-            result = self.client.table("mobile_money_details").select("*, businesses(*)").eq("account_number", normalized_phone).execute()
+            # First, check businesses table for the phone number
+            result = self.client.table("businesses").select("*").eq("phone", normalized_phone).execute()
+            if "data" in result and result["data"]:
+                return result["data"][0]
             
+            # If not found, check mobile_money_details where businesses might have registered their phone
+            result = self.client.table("mobile_money_details").select("*, businesses(*)").eq("account_number", normalized_phone).execute()
             if "data" in result and result["data"]:
                 # Return the associated business data
                 return result["data"][0]["businesses"]
-                
-            # If not found, check if the business might have registered it directly
-            result = self.client.table("businesses").select("*").eq("phone", normalized_phone).execute()
-            
-            if "data" in result and result["data"]:
-                return result["data"][0]
                 
             return None
         except Exception as e:
