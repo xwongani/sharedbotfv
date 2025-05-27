@@ -243,71 +243,47 @@ class WhatsAppHandler:
     async def _handle_business_selection(self, phone_number: str, message_text: str) -> Optional[Dict]:
         """
         Handle business selection when a user needs to choose which business to interact with
-        
-        Args:
-            phone_number: User's phone number
-            message_text: Message text
-            
-        Returns:
-            Response dictionary if business selected, None otherwise
         """
-        # Check if the message contains a business name or ID
         try:
-            # Try to interpret as a business ID first
-            if message_text.isdigit():
-                business_id = int(message_text)
-                business = await self.supabase_client.get_business_by_id(business_id)
-                
+            # Fetch all businesses from Supabase
+            businesses_result = self.supabase_client.client.table("businesses").select("*").execute()
+            businesses = businesses_result.get("data", [])
+            if not businesses:
+                return {"message": "Sorry, there are no businesses available at the moment."}
+
+            # Store mapping of index to business ID in session for this user
+            index_to_id = {str(i+1): b["id"] for i, b in enumerate(businesses)}
+            await self.user_context_service.set_active_business(phone_number, None)  # Clear any previous selection
+            session = self.user_context_service._get_or_create_session(phone_number, None)
+            session["business_selection_map"] = index_to_id
+
+            # If the user replies with a number, map it to the business ID
+            if message_text.isdigit() and message_text in index_to_id:
+                business_id = index_to_id[message_text]
+                business = next((b for b in businesses if b["id"] == business_id), None)
                 if business:
-                    # Set the active business
-                    await self.user_context_service.set_active_business(phone_number, str(business_id))
+                    await self.user_context_service.set_active_business(phone_number, business_id)
                     return {
-                        "message": f"You're now chatting with {business.get('business_name')}. How can I help you today?"
+                        "message": f"You're now chatting with {business.get('business_name', business.get('name', 'this business'))}. How can I help you today?"
                     }
-            
+
             # Try to search for business by name
-            # Note: In a real implementation, you would have a proper search function
-            # For now, we'll just simulate searching by business name
             message_lower = message_text.lower()
-            
-            # Get a list of businesses from the available business tables
-            # In a real implementation, you would query Supabase for this
-            businesses = [
-                {"id": 4, "business_name": "Borion Mobile Hub", "industry": "Phones"},
-                {"id": 5, "business_name": "Kapambwe Cakes", "industry": "Cakes"},
-                {"id": 6, "business_name": "WC Microfinance", "industry": "Loans"}
-            ]
-            
             for business in businesses:
-                if message_lower in business.get("business_name", "").lower():
-                    # Set the active business
-                    await self.user_context_service.set_active_business(phone_number, str(business.get("id")))
+                if message_lower in business.get("business_name", business.get("name", "")).lower():
+                    await self.user_context_service.set_active_business(phone_number, business["id"])
                     return {
-                        "message": f"You're now chatting with {business.get('business_name')}. How can I help you today?"
+                        "message": f"You're now chatting with {business.get('business_name', business.get('name', 'this business'))}. How can I help you today?"
                     }
-            
+
             # If we couldn't match a business, list available businesses
             message = "I couldn't find that business. Please select one of the following businesses by sending their number:\n\n"
-            for business in businesses:
-                message += f"{business.get('id')}: {business.get('business_name')} ({business.get('industry')})\n"
-            
+            for i, business in enumerate(businesses, 1):
+                message += f"{i}: {business.get('business_name', business.get('name', 'Unknown'))} ({business.get('industry', '')})\n"
             return {"message": message}
-            
         except Exception as e:
             logger.error(f"Error handling business selection: {str(e)}")
-            
-            # List available businesses
-            message = "Please select one of the following businesses by sending their number:\n\n"
-            businesses = [
-                {"id": 4, "business_name": "Borion Mobile Hub", "industry": "Phones"},
-                {"id": 5, "business_name": "Kapambwe Cakes", "industry": "Cakes"},
-                {"id": 6, "business_name": "WC Microfinance", "industry": "Loans"}
-            ]
-            
-            for business in businesses:
-                message += f"{business.get('id')}: {business.get('business_name')} ({business.get('industry')})\n"
-            
-            return {"message": message}
+            return {"message": "Sorry, there was an error processing your business selection. Please try again later."}
     
     async def _process_commands(self, phone_number: str, message_text: str, current_state: str, business_id: Optional[str] = None) -> Optional[Dict]:
         """
