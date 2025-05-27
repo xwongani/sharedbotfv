@@ -29,6 +29,10 @@ class SupabaseClient:
                 logger.error("Supabase URL or key is missing. Check your environment variables.")
                 self.client = None
                 return
+            
+            # Ensure URL ends with /rest/v1
+            if not url.endswith('/rest/v1'):
+                url = url.rstrip('/') + '/rest/v1'
                 
             self.client = create_client(url, key)
             logger.info("Supabase client initialized successfully")
