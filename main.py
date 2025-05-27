@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from app.whatsapp.router import router as whatsapp_router
 from app.api.router import router as api_router
+from app.twilio.service import TwilioService
+from app.whatsapp.handler import WhatsAppHandler
 import logging
 import os
 from dotenv import load_dotenv
@@ -61,9 +63,46 @@ app.add_middleware(
 app.include_router(whatsapp_router)
 app.include_router(api_router)
 
+# Initialize services
+twilio_service = TwilioService()
+whatsapp_handler = WhatsAppHandler()
+
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Inxsource WhatsApp Sales Bot API"}
+
+@app.post("/")
+async def root_webhook(request: Request, background_tasks: BackgroundTasks):
+    """
+    Root webhook endpoint for backward compatibility with Twilio
+    """
+    try:
+        # Extract form data from the request
+        form_data = await request.form()
+        form_dict = dict(form_data)
+        
+        # Log the incoming message
+        logger.info(f"Received webhook at root: {form_dict}")
+        
+        # Extract message data
+        message_data = twilio_service.extract_whatsapp_data(form_dict)
+        
+        # Process the message in the background for non-blocking responses
+        background_tasks.add_task(
+            whatsapp_handler.process_message,
+            message_data
+        )
+        
+        # Create immediate acknowledgment response
+        response = "We're processing your message. Please wait a moment..."
+        twiml_response = twilio_service.create_twiml_response(response)
+        
+        return Response(content=twiml_response, media_type="application/xml")
+    except Exception as e:
+        logger.error(f"Error processing webhook at root: {str(e)}")
+        # Return a basic error response
+        resp = twilio_service.create_twiml_response("Sorry, we encountered an error processing your message. Please try again later.")
+        return Response(content=resp, media_type="application/xml")
 
 @app.get("/health")
 async def health_check():

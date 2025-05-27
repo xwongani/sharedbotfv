@@ -21,6 +21,7 @@ def get_whatsapp_handler():
     return WhatsAppHandler()
 
 @router.post("/webhook")
+@router.post("/webhook/")
 async def webhook(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -62,6 +63,7 @@ async def webhook(
         return Response(content=str(resp), media_type="application/xml")
 
 @router.post("/direct-message")
+@router.post("/direct-message/")
 async def direct_message(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -115,6 +117,7 @@ async def direct_message(
         )
 
 @router.get("/status")
+@router.get("/status/")
 async def status(phone_number: Optional[str] = None):
     """
     Get status information about WhatsApp services
