@@ -142,15 +142,25 @@ class WhatsAppHandler:
         
         # Check if the phone number the customer messaged is associated with a business
         business = await self.supabase_client.get_business_by_phone(to_phone)
+        logger.info(f"[_identify_business] Business found by phone {to_phone}: {business}")
+        
         if business:
-            business_id = business.get("id")
-            logger.info(f"[_identify_business] Found business by to_phone: {business_id} (type: {type(business_id)})")
+            # Try to get business_id from different possible fields
+            business_id = business.get("id") or business.get("business_id")
+            logger.info(f"[_identify_business] Extracted business_id: {business_id} (type: {type(business_id)})")
+            
             if business_id:
+                # Convert to string and ensure it's a valid UUID
+                business_id_str = str(business_id)
+                logger.info(f"[_identify_business] Setting active business to: {business_id_str}")
+                
                 # Set the active business in the session
-                await self.user_context_service.set_active_business(customer_phone, str(business_id))
+                await self.user_context_service.set_active_business(customer_phone, business_id_str)
                 # Update the session state to GREETING since this is a new conversation
-                await self.user_context_service.update_session_state(customer_phone, ConversationState.GREETING, str(business_id))
-                return str(business_id)
+                await self.user_context_service.update_session_state(customer_phone, ConversationState.GREETING, business_id_str)
+                return business_id_str
+            else:
+                logger.error(f"[_identify_business] Business found but no valid ID: {business}")
         
         logger.warning(f"[_identify_business] Could not identify business for user {customer_phone}")
         return None
