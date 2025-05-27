@@ -67,19 +67,20 @@ class SupabaseClient:
                 
             # Normalize phone number to ensure consistent searching
             normalized_phone = phone_number.replace("whatsapp:", "")
+            logger.debug(f"Searching for business with normalized phone: {normalized_phone}")
             
-            # First, check businesses table for the phone number
+            # Check businesses table for the phone number
             result = self.client.table("businesses").select("*").eq("phone", normalized_phone).execute()
             logger.debug(f"Supabase businesses query result: {result}")
-            if "data" in result and result["data"]:
-                return result["data"][0]
             
-            # If not found, check mobile_money_details where businesses might have registered their phone
-            result = self.client.table("mobile_money_details").select("*, businesses(*)").eq("account_number", normalized_phone).execute()
-            if "data" in result and result["data"]:
-                # Return the associated business data
-                return result["data"][0]["businesses"]
+            if hasattr(result, 'data') and result.data:
+                logger.debug(f"Found business in businesses table: {result.data[0]}")
+                return result.data[0]
+            elif "data" in result and result["data"]:
+                logger.debug(f"Found business in businesses table (dict): {result['data'][0]}")
+                return result["data"][0]
                 
+            logger.debug(f"No business found for phone: {normalized_phone}")
             return None
         except Exception as e:
             logger.error(f"Error fetching business by phone: {str(e)}")
