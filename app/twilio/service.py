@@ -13,19 +13,21 @@ logger = logging.getLogger(__name__)
 
 class TwilioService:
     def __init__(self):
-        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        self.account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        self.auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        self.whatsapp_number = os.getenv("TWILIO_WHATSAPP_NUMBER")
         
-        if not account_sid or not auth_token:
+        if not self.account_sid or not self.auth_token:
             logger.error("Twilio credentials not configured")
             raise ValueError("Twilio credentials not configured")
             
-        self.client = Client(account_sid, auth_token)
-        self.whatsapp_number = os.getenv("TWILIO_WHATSAPP_NUMBER")
-        
         if not self.whatsapp_number:
             logger.error("TWILIO_WHATSAPP_NUMBER not configured")
             raise ValueError("TWILIO_WHATSAPP_NUMBER not configured")
+            
+        logger.info(f"Initializing Twilio client with Account SID: {self.account_sid[:6]}...")
+        self.client = Client(self.account_sid, self.auth_token)
+        logger.info("Twilio client initialized successfully")
     
     async def send_message(
         self, 
@@ -51,7 +53,7 @@ class TwilioService:
                 
             # Create message parameters
             message_params = {
-                "from_": self.whatsapp_number,
+                "from_": f"whatsapp:{self.whatsapp_number}",
                 "body": body,
                 "to": to
             }
