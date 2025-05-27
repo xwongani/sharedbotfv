@@ -247,7 +247,7 @@ class WhatsAppHandler:
         try:
             # Fetch all businesses from Supabase
             businesses_result = self.supabase_client.client.table("businesses").select("*").execute()
-            businesses = businesses_result.get("data", [])
+            businesses = businesses_result.data
             if not businesses:
                 return {"message": "Sorry, there are no businesses available at the moment."}
 
