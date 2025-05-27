@@ -69,6 +69,7 @@ class SupabaseClient:
             
             # First, check businesses table for the phone number
             result = self.client.table("businesses").select("*").eq("phone", normalized_phone).execute()
+            logger.debug(f"Supabase businesses query result: {result}")
             if "data" in result and result["data"]:
                 return result["data"][0]
             
