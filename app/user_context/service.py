@@ -33,7 +33,7 @@ class UserContextService:
         # Session timeout (inactive time before session is considered expired)
         self.session_timeout_minutes = 30
     
-    def _get_or_create_session(self, phone_number: str, business_id: Optional[int] = None) -> Dict:
+    def _get_or_create_session(self, phone_number: str, business_id: Optional[str] = None) -> Dict:
         """
         Get or create user session data
         
@@ -151,7 +151,7 @@ class UserContextService:
                 self.conversation_history.pop(phone_number, None)
                 logger.info(f"Removed all sessions for {phone_number}")
     
-    def get_active_business_id(self, phone_number: str) -> Optional[int]:
+    def get_active_business_id(self, phone_number: str) -> Optional[str]:
         """
         Get the currently active business ID for a user
         
@@ -182,9 +182,9 @@ class UserContextService:
                 latest_time = last_activity
                 most_recent = business_id
         
-        return int(most_recent) if most_recent else None
+        return most_recent
     
-    async def set_active_business(self, phone_number: str, business_id: int) -> Dict:
+    async def set_active_business(self, phone_number: str, business_id: str) -> Dict:
         """
         Set the active business for a user
         
@@ -198,7 +198,7 @@ class UserContextService:
         session = self._get_or_create_session(phone_number, business_id)
         return session
     
-    async def get_session(self, phone_number: str, business_id: Optional[int] = None) -> Dict:
+    async def get_session(self, phone_number: str, business_id: Optional[str] = None) -> Dict:
         """
         Get the current session for a user
         
@@ -211,7 +211,7 @@ class UserContextService:
         """
         return self._get_or_create_session(phone_number, business_id)
     
-    async def update_session_state(self, phone_number: str, new_state: str, business_id: Optional[int] = None) -> Dict:
+    async def update_session_state(self, phone_number: str, new_state: str, business_id: Optional[str] = None) -> Dict:
         """
         Update the conversation state for a user
         
@@ -231,7 +231,7 @@ class UserContextService:
         session["state"] = new_state
         return session
     
-    async def update_session_data(self, phone_number: str, data_key: str, value: Any, business_id: Optional[int] = None) -> Dict:
+    async def update_session_data(self, phone_number: str, data_key: str, value: Any, business_id: Optional[str] = None) -> Dict:
         """
         Update a specific data field in the session
         
@@ -252,7 +252,7 @@ class UserContextService:
         session["data"][data_key] = value
         return session
     
-    async def get_conversation_history(self, phone_number: str, business_id: Optional[int] = None) -> List[Dict]:
+    async def get_conversation_history(self, phone_number: str, business_id: Optional[str] = None) -> List[Dict]:
         """
         Get conversation history for a user
         
@@ -277,7 +277,7 @@ class UserContextService:
             return self.conversation_history[phone_number][business_id_str]
         return []
     
-    async def add_message_to_history(self, phone_number: str, role: str, content: str, business_id: Optional[int] = None):
+    async def add_message_to_history(self, phone_number: str, role: str, content: str, business_id: Optional[str] = None):
         """
         Add a message to the conversation history
         
@@ -315,7 +315,7 @@ class UserContextService:
         if len(self.conversation_history[phone_number][business_id_str]) > self.max_history_length:
             self.conversation_history[phone_number][business_id_str] = self.conversation_history[phone_number][business_id_str][-self.max_history_length:]
     
-    async def add_to_cart(self, phone_number: str, product: Dict, quantity: int = 1, business_id: Optional[int] = None) -> Dict:
+    async def add_to_cart(self, phone_number: str, product: Dict, quantity: int = 1, business_id: Optional[str] = None) -> Dict:
         """
         Add a product to the user's cart
         
@@ -359,7 +359,7 @@ class UserContextService:
         
         return session["data"]["cart"]
     
-    async def remove_from_cart(self, phone_number: str, product_id: str, business_id: Optional[int] = None) -> Dict:
+    async def remove_from_cart(self, phone_number: str, product_id: str, business_id: Optional[str] = None) -> Dict:
         """
         Remove a product from the user's cart
         
@@ -388,7 +388,7 @@ class UserContextService:
         
         return session["data"]["cart"]
     
-    async def clear_cart(self, phone_number: str, business_id: Optional[int] = None) -> Dict:
+    async def clear_cart(self, phone_number: str, business_id: Optional[str] = None) -> Dict:
         """
         Clear the user's cart
         
@@ -407,7 +407,7 @@ class UserContextService:
         session["data"]["cart"] = []
         return session["data"]
     
-    async def get_cart(self, phone_number: str, business_id: Optional[int] = None) -> List[Dict]:
+    async def get_cart(self, phone_number: str, business_id: Optional[str] = None) -> List[Dict]:
         """
         Get the user's current cart
         
@@ -425,7 +425,7 @@ class UserContextService:
         session = self._get_or_create_session(phone_number, business_id)
         return session["data"].get("cart", [])
     
-    async def calculate_cart_total(self, phone_number: str, business_id: Optional[int] = None) -> Dict:
+    async def calculate_cart_total(self, phone_number: str, business_id: Optional[str] = None) -> Dict:
         """
         Calculate the total price of items in the cart
         
@@ -453,7 +453,7 @@ class UserContextService:
             "currency": "ZMW"  # Assuming Zambian Kwacha as default currency
         }
     
-    async def get_session_data(self, phone_number: str, business_id: Optional[int] = None) -> Dict:
+    async def get_session_data(self, phone_number: str, business_id: Optional[str] = None) -> Dict:
         """
         Get all session data for a user
         
@@ -471,7 +471,7 @@ class UserContextService:
         session = self._get_or_create_session(phone_number, business_id)
         return session["data"]
         
-    async def get_all_user_businesses(self, phone_number: str) -> List[int]:
+    async def get_all_user_businesses(self, phone_number: str) -> List[str]:
         """
         Get all businesses a user has interacted with
         
@@ -487,5 +487,5 @@ class UserContextService:
         # Exclude temporary session
         business_keys = [k for k in self.user_sessions[phone_number].keys() if k != "_temp"]
         
-        # Convert to integers
-        return [int(business_id) for business_id in business_keys] 
+        # Return as strings (UUIDs)
+        return business_keys 
