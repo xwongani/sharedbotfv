@@ -30,10 +30,11 @@ class SupabaseClient:
                 self.client = None
                 return
             
-            # Ensure URL ends with /rest/v1
-            if not url.endswith('/rest/v1'):
-                url = url.rstrip('/') + '/rest/v1'
-                
+            # Remove /rest/v1 if it exists and ensure proper URL format
+            url = url.replace('/rest/v1', '')
+            url = url.rstrip('/')
+            
+            logger.info(f"Initializing Supabase client with URL: {url}")
             self.client = create_client(url, key)
             logger.info("Supabase client initialized successfully")
         except Exception as e:
