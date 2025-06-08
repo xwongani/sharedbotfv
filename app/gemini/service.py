@@ -52,11 +52,15 @@ class GeminiService:
             
             # Add system prompt first - use business-specific prompt if available
             system_prompt = self.system_prompt
+            logger.debug(f"Context received: {context}")
+            
             if context and context.get("chatbot_config") and context["chatbot_config"].get("base_prompt"):
                 system_prompt = context["chatbot_config"]["base_prompt"]
+                logger.debug(f"Using chatbot_config base_prompt")
             elif context and context.get("business"):
                 business = context["business"]
                 business_name = business.get("business_name", "our business")
+                logger.debug(f"Using business-specific prompt for: {business_name}")
                 system_prompt = f"""
                 You are an AI sales assistant for {business_name}. 
                 Your goal is to help customers find and purchase products through WhatsApp.
@@ -73,6 +77,8 @@ class GeminiService:
                 
                 Product information and order details will be provided to you as context.
                 """
+            else:
+                logger.debug(f"Using default Inxsource system prompt")
             
             formatted_history += f"System: {system_prompt}\n\n"
             
