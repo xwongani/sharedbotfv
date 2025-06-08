@@ -19,7 +19,7 @@ class GeminiService:
             raise ValueError("GEMINI_API_KEY not configured")
             
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-1.5-pro')
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
         self.logger = logging.getLogger(__name__)
         
         # Sales bot system prompt
