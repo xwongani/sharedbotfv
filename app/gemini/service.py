@@ -50,8 +50,31 @@ class GeminiService:
             # Format conversation history for the model
             formatted_history = ""
             
-            # Add system prompt first
-            formatted_history += f"System: {self.system_prompt}\n\n"
+            # Add system prompt first - use business-specific prompt if available
+            system_prompt = self.system_prompt
+            if context and context.get("chatbot_config") and context["chatbot_config"].get("base_prompt"):
+                system_prompt = context["chatbot_config"]["base_prompt"]
+            elif context and context.get("business"):
+                business = context["business"]
+                business_name = business.get("business_name", "our business")
+                system_prompt = f"""
+                You are an AI sales assistant for {business_name}. 
+                Your goal is to help customers find and purchase products through WhatsApp.
+                
+                Follow these guidelines:
+                1. Be friendly, professional, and concise in your responses.
+                2. Help customers find products, answer questions about products, and guide them through the purchasing process.
+                3. When a customer wants to make a purchase, collect necessary information (product, quantity, shipping details).
+                4. You can display product listings and provide images when available.
+                5. Stay focused on helping customers with {business_name} products and services.
+                6. If you don't know something, be honest and suggest alternatives.
+                7. Respond in the same language as the customer.
+                8. Keep responses short and to the point, as this is a WhatsApp conversation.
+                
+                Product information and order details will be provided to you as context.
+                """
+            
+            formatted_history += f"System: {system_prompt}\n\n"
             
             # Add context if available
             if context:
