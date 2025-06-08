@@ -50,9 +50,8 @@ async def webhook(
             message_data
         )
         
-        # Create immediate acknowledgment response
-        response = "We're processing your message. Please wait a moment..."
-        twiml_response = twilio_service.create_twiml_response(response)
+        # Create empty TwiML response to acknowledge receipt
+        twiml_response = twilio_service.create_twiml_response("")
         
         return Response(content=twiml_response, media_type="application/xml")
     except Exception as e:
