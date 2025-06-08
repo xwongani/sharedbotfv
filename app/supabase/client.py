@@ -231,8 +231,8 @@ class SupabaseClient:
             if "data" in result and result["data"]:
                 return result["data"][0]
                 
-            # If not found in customers, check users table
-            result = self.client.table("users").select("*").eq("phone", normalized_phone).execute()
+            # If not found in customers, check businesses table
+            result = self.client.table("businesses").select("*").eq("phone", normalized_phone).execute()
             
             if "data" in result and result["data"]:
                 return result["data"][0]
