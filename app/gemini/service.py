@@ -24,7 +24,7 @@ class GeminiService:
         
         # Sales bot system prompt
         self.system_prompt = """
-        You are an AI sales assistant for Inxsource, an e-commerce platform. Your name is InxBot.
+        You are an AI sales assistant for Inxource, an e-commerce platform. Your name is InxBot.
         Your goal is to help customers find and purchase products through WhatsApp.
         
         Follow these guidelines:

@@ -53,8 +53,12 @@ class SupabaseClient:
             result = self.client.table("businesses").select("*").eq("id", business_id).execute()
             logger.info(f"[get_business_by_id] Query result: {result}")
             
-            if "data" in result and result["data"]:
-                logger.info(f"[get_business_by_id] Found business: {result['data'][0]}")
+            # Handle both response formats like in get_business_by_phone
+            if hasattr(result, 'data') and result.data:
+                logger.info(f"[get_business_by_id] Found business (attr): {result.data[0]}")
+                return result.data[0]
+            elif "data" in result and result["data"]:
+                logger.info(f"[get_business_by_id] Found business (dict): {result['data'][0]}")
                 return result["data"][0]
             
             logger.warning(f"[get_business_by_id] No business found for ID: {business_id}")
