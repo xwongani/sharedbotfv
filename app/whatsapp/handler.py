@@ -516,14 +516,19 @@ class WhatsAppHandler:
         
         # Add business information if available
         if business_id:
+            logger.info(f"[_prepare_conversation_context] Getting business data for ID: {business_id}")
             business = await self.supabase_client.get_business_by_id(business_id)
+            logger.info(f"[_prepare_conversation_context] Business data retrieved: {business}")
             if business:
                 context["business"] = business
+                logger.info(f"[_prepare_conversation_context] Added business to context: {business.get('business_name')}")
                 
                 # Add payment details for this business
                 payment_details = await self.supabase_client.get_payment_details(business_id)
                 if payment_details:
                     context["payment_details"] = payment_details
+            else:
+                logger.warning(f"[_prepare_conversation_context] No business found for ID: {business_id}")
         
         # Get user info if available
         user = await self.supabase_client.get_user_by_phone(phone_number)

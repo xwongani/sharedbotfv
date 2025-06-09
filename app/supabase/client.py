@@ -45,14 +45,19 @@ class SupabaseClient:
     async def get_business_by_id(self, business_id):
         """Get business information by ID"""
         try:
+            logger.info(f"[get_business_by_id] Called with business_id: {business_id}")
             if not self.client:
                 logger.error("Supabase client not initialized")
                 return None
                 
             result = self.client.table("businesses").select("*").eq("id", business_id).execute()
+            logger.info(f"[get_business_by_id] Query result: {result}")
             
             if "data" in result and result["data"]:
+                logger.info(f"[get_business_by_id] Found business: {result['data'][0]}")
                 return result["data"][0]
+            
+            logger.warning(f"[get_business_by_id] No business found for ID: {business_id}")
             return None
         except Exception as e:
             logger.error(f"Error fetching business by ID: {str(e)}")
